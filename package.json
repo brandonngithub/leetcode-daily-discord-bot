@@ -1,6 +1,0 @@
-{
-  "private": true,
-  "scripts": {
-    "send": "node send-daily.js"
-  }
-}

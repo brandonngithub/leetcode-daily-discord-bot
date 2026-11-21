@@ -1,5 +1,9 @@
-async function fetchDailyProblem() {
-  const response = await fetch("https://leetcode.com/graphql", {
+async function main() {
+  if (!process.env.DISCORD_WEBHOOK_URL) {
+    throw new Error("DISCORD_WEBHOOK_URL is not configured");
+  }
+
+  const leetcodeResponse = await fetch("https://leetcode.com/graphql", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -16,11 +20,11 @@ async function fetchDailyProblem() {
     })
   });
 
-  if (!response.ok) {
-    throw new Error(`LeetCode returned ${response.status}`);
+  if (!leetcodeResponse.ok) {
+    throw new Error(`LeetCode returned ${leetcodeResponse.status}`);
   }
 
-  const { data, errors } = await response.json();
+  const { data, errors } = await leetcodeResponse.json();
   if (errors?.length) {
     throw new Error(errors[0].message);
   }
@@ -29,16 +33,8 @@ async function fetchDailyProblem() {
   if (!problem) {
     throw new Error("LeetCode did not return a daily problem");
   }
-  return problem;
-}
 
-async function sendToDiscord(problem) {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-  if (!webhookUrl) {
-    throw new Error("DISCORD_WEBHOOK_URL is not configured");
-  }
-
-  const response = await fetch(webhookUrl, {
+  const discordResponse = await fetch(process.env.DISCORD_WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -52,21 +48,14 @@ async function sendToDiscord(problem) {
     })
   });
 
-  if (!response.ok) {
-    throw new Error(`Discord returned ${response.status}`);
+  if (!discordResponse.ok) {
+    throw new Error(`Discord returned ${discordResponse.status}`);
   }
-}
 
-async function main() {
-  await sendToDiscord(await fetchDailyProblem());
   console.log("Daily LeetCode problem sent to Discord.");
 }
 
-if (require.main === module) {
-  main().catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
-}
-
-module.exports = { fetchDailyProblem, sendToDiscord };
+main().catch(error => {
+  console.error(error);
+  process.exit(1);
+});
