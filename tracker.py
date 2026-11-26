@@ -47,9 +47,9 @@ query userActivity($username: String!) {
 }
 """
 DIFFICULTY_COLORS = {
-    "Easy": 0x00AF9B,
-    "Medium": 0xFFB800,
-    "Hard": 0xFF2D55,
+    "Easy": 0x57F287,
+    "Medium": 0xFEE75C,
+    "Hard": 0xED4245,
 }
 
 
@@ -179,10 +179,10 @@ def create_embed(problem):
     difficulty = problem["difficulty"]
     challenge_date = datetime.strptime(problem["date"], "%Y-%m-%d").date()
     return {
-        "title": f"🧩 Daily Leetcode - {format_report_date(challenge_date)}",
+        "title": f"🧩 {problem['id']}. {problem['title']}",
+        "url": f"https://leetcode.com/problems/{problem['slug']}/",
         "description": (
-            f"[{problem['id']}. {problem['title']}]"
-            f"(https://leetcode.com/problems/{problem['slug']}/)\n"
+            f"Daily Leetcode - {format_report_date(challenge_date)}\n"
             f"Difficulty: **{difficulty}**"
         ),
         "color": DIFFICULTY_COLORS.get(difficulty, 0x5865F2),
