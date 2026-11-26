@@ -36,7 +36,12 @@ class UserActivityTests(unittest.TestCase):
                                 ): 0,
                             }
                         )
-                    }
+                    },
+                    "submitStats": {
+                        "acSubmissionNum": [
+                            {"difficulty": "All", "count": 110}
+                        ]
+                    },
                 }
             }
         }
@@ -46,6 +51,7 @@ class UserActivityTests(unittest.TestCase):
             {
                 "dates": {date(2026, 11, 24)},
                 "avatar_url": "https://example.com/avatar.png",
+                "total_solved": 110,
             },
         )
         self.assertEqual(
@@ -67,6 +73,7 @@ class UserActivityTests(unittest.TestCase):
                         date(2026, 11, 25),
                     },
                     "avatar_url": "https://example.com/brandonpy.png",
+                    "total_solved": 110,
                 },
             ),
             (
@@ -74,6 +81,7 @@ class UserActivityTests(unittest.TestCase):
                 {
                     "dates": {date(2026, 11, 20), report_date},
                     "avatar_url": "https://example.com/harshypoo.png",
+                    "total_solved": 75,
                 },
             ),
             (
@@ -81,6 +89,7 @@ class UserActivityTests(unittest.TestCase):
                 {
                     "dates": {date(2026, 11, 24)},
                     "avatar_url": "https://example.com/youngneezy.png",
+                    "total_solved": 24,
                 },
             ),
             (
@@ -88,6 +97,23 @@ class UserActivityTests(unittest.TestCase):
                 {
                     "dates": set(),
                     "avatar_url": "https://example.com/amarz45.png",
+                    "total_solved": 3,
+                },
+            ),
+            (
+                "asnorkin",
+                {
+                    "dates": set(),
+                    "avatar_url": "https://example.com/asnorkin.png",
+                    "total_solved": 1,
+                },
+            ),
+            (
+                "sixthuser",
+                {
+                    "dates": set(),
+                    "avatar_url": "https://example.com/sixthuser.png",
+                    "total_solved": 0,
                 },
             ),
         ]
@@ -98,6 +124,9 @@ class UserActivityTests(unittest.TestCase):
 
         self.assertIn("brandonpy", leaderboard["description"])
         self.assertIn("3 days active", leaderboard["description"])
+        self.assertIn("110 problems completed", leaderboard["description"])
+        self.assertIn("sixthuser", leaderboard["description"])
+        self.assertEqual(leaderboard["description"].count("\n"), 5)
         self.assertEqual(
             daily_streaks,
             [

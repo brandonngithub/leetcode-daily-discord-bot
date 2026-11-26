@@ -37,6 +37,12 @@ query userActivity($username: String!) {
     userCalendar {
       submissionCalendar
     }
+    submitStats {
+      acSubmissionNum {
+        difficulty
+        count
+      }
+    }
   }
 }
 """
@@ -131,6 +137,23 @@ def get_user_activity(username):
     if not avatar_url:
         raise RuntimeError(f"LeetCode returned no avatar for {username}")
 
+    submit_stats = matched_user.get("submitStats")
+    accepted_submissions = (
+        submit_stats.get("acSubmissionNum") if submit_stats else None
+    )
+    total_solved = next(
+        (
+            entry.get("count")
+            for entry in accepted_submissions or []
+            if entry.get("difficulty") == "All"
+        ),
+        None,
+    )
+    if not isinstance(total_solved, int) or total_solved < 0:
+        raise RuntimeError(
+            f"LeetCode returned no accepted problem total for {username}"
+        )
+
     active_dates = set()
     try:
         for timestamp, submission_count in submissions_by_timestamp.items():
@@ -145,7 +168,11 @@ def get_user_activity(username):
             f"LeetCode returned invalid calendar dates for {username}"
         ) from error
 
-    return {"dates": active_dates, "avatar_url": avatar_url}
+    return {
+        "dates": active_dates,
+        "avatar_url": avatar_url,
+        "total_solved": total_solved,
+    }
 
 
 def create_embed(problem):
@@ -183,15 +210,19 @@ def create_activity_report(user_activity, report_date):
                 month_start <= active_date <= report_date
                 for active_date in activity["dates"]
             ),
+            activity["total_solved"],
         )
         for username, activity in user_activity
     ]
     leaderboard = sorted(
         monthly_active_days, key=lambda entry: entry[1], reverse=True
-    )[:5]
+    )
     leaderboard_text = "\n".join(
         f"{position}. **{username}** — {format_active_days(active_days)}"
-        for position, (username, active_days) in enumerate(leaderboard, start=1)
+        f" | {total_solved} problems completed"
+        for position, (username, active_days, total_solved) in enumerate(
+            leaderboard, start=1
+        )
     )
     leaderboard_embed = {
         "title": f"🏆 Monthly Leaderboard — {month_start.strftime('%B %Y')}",
