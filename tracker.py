@@ -178,13 +178,11 @@ def get_user_activity(username):
 def create_embed(problem):
     difficulty = problem["difficulty"]
     challenge_date = datetime.strptime(problem["date"], "%Y-%m-%d").date()
-    problem_url = f"https://leetcode.com/problems/{problem['slug']}/"
     return {
         "title": f"🧩 Daily Leetcode - {format_report_date(challenge_date)}",
-        "url": problem_url,
         "description": (
             f"[{problem['id']}. {problem['title']}]"
-            f"({problem_url})\n"
+            f"(https://leetcode.com/problems/{problem['slug']}/)\n"
             f"Difficulty: **{difficulty}**"
         ),
         "color": DIFFICULTY_COLORS.get(difficulty, 0x5865F2),
@@ -203,14 +201,7 @@ def format_report_date(report_date):
 def create_activity_report(user_activity, report_date):
     leaderboard = sorted(
         [
-            (
-                username,
-                sum(
-                    report_date.replace(day=1) <= active_date <= report_date
-                    for active_date in activity["dates"]
-                ),
-                activity["total_solved"],
-            )
+            (username, activity["total_solved"])
             for username, activity in user_activity
         ],
         key=lambda entry: entry[1],
@@ -218,7 +209,7 @@ def create_activity_report(user_activity, report_date):
     )
     leaderboard_text = "\n".join(
         f"{position}. **{username}** — {total_solved}"
-        for position, (username, _, total_solved) in enumerate(
+        for position, (username, total_solved) in enumerate(
             leaderboard, start=1
         )
     )
@@ -403,7 +394,7 @@ def main():
     leaderboard_embed, daily_streaks = create_activity_report(
         user_activity, report_date
     )
-    embeds = [create_embed(problem), leaderboard_embed]
+    embeds = [leaderboard_embed, create_embed(problem)]
 
     with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
         create_activity_dashboard(daily_streaks, image_file.name)
