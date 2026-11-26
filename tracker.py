@@ -178,11 +178,13 @@ def get_user_activity(username):
 def create_embed(problem):
     difficulty = problem["difficulty"]
     challenge_date = datetime.strptime(problem["date"], "%Y-%m-%d").date()
+    problem_url = f"https://leetcode.com/problems/{problem['slug']}/"
     return {
         "title": f"🧩 Daily Leetcode - {format_report_date(challenge_date)}",
+        "url": problem_url,
         "description": (
             f"[{problem['id']}. {problem['title']}]"
-            f"(https://leetcode.com/problems/{problem['slug']}/)\n"
+            f"({problem_url})\n"
             f"Difficulty: **{difficulty}**"
         ),
         "color": DIFFICULTY_COLORS.get(difficulty, 0x5865F2),
