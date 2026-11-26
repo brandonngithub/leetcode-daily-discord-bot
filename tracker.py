@@ -287,23 +287,6 @@ def draw_fire_icon(draw, x, y, size=18):
 
 def create_activity_dashboard(activity, output_path):
     if not activity:
-        image = Image.new("RGB", (600, 180), "#17181c")
-        draw = ImageDraw.Draw(image)
-        message = "NO SUBMISSIONS"
-        font = get_font(32, bold=True)
-        text_bbox = draw.textbbox((0, 0), message, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        draw.text(
-            (
-                (image.width - text_width) // 2 - text_bbox[0],
-                (image.height - text_height) // 2 - text_bbox[1],
-            ),
-            message,
-            fill="#ed4245",
-            font=font,
-        )
-        image.save(output_path, format="PNG")
         return
 
     card_width = 180
@@ -362,7 +345,7 @@ def create_activity_dashboard(activity, output_path):
     image.save(output_path, format="PNG")
 
 
-def send_discord_report(embeds, image_path):
+def send_discord_report(embeds, image_path=None):
     webhook_url = os.environ["DISCORD_WEBHOOK_URL"]
     response = requests.post(
         webhook_url,
@@ -370,6 +353,9 @@ def send_discord_report(embeds, image_path):
         timeout=30,
     )
     response.raise_for_status()
+
+    if image_path is None:
+        return
 
     with open(image_path, "rb") as image_file:
         image_response = requests.post(
@@ -396,9 +382,12 @@ def main():
     )
     embeds = [leaderboard_embed, create_embed(problem)]
 
-    with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
-        create_activity_dashboard(daily_streaks, image_file.name)
-        send_discord_report(embeds, image_file.name)
+    if daily_streaks:
+        with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
+            create_activity_dashboard(daily_streaks, image_file.name)
+            send_discord_report(embeds, image_file.name)
+    else:
+        send_discord_report(embeds)
 
     print("Daily LeetCode report sent to Discord.")
 
