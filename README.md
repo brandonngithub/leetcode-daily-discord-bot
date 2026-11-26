@@ -1,3 +1,3 @@
-# leetcode-activity-tracker
+# leetcode-daily-discord-bot
 
 .
