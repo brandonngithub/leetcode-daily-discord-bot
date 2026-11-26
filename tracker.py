@@ -13,7 +13,7 @@ LEETCODE_USERS = [
     "harshypoo",
     "youngneezy",
     "amarz45",
-    "asnorkin",
+    # "asnorkin",
 ]
 DAILY_CHALLENGE_QUERY = """
 query questionOfToday {
@@ -179,7 +179,7 @@ def create_embed(problem):
     difficulty = problem["difficulty"]
     challenge_date = datetime.strptime(problem["date"], "%Y-%m-%d").date()
     return {
-        "title": f"Daily Leetcode - {format_report_date(challenge_date)}",
+        "title": f"🧩 Daily Leetcode - {format_report_date(challenge_date)}",
         "description": (
             f"[{problem['id']}. {problem['title']}]"
             f"(https://leetcode.com/problems/{problem['slug']}/)\n"
