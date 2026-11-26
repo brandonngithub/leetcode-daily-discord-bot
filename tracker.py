@@ -345,7 +345,7 @@ def create_activity_dashboard(activity, output_path):
 
 
 def send_discord_report(embeds, image_path=None):
-    webhook_url = os.environ["DISCORD_WEBHOOK_URL"]
+    webhook_url = os.environ["DISCORD_WEBHOOK"]
     response = requests.post(
         webhook_url,
         json={"embeds": embeds},
