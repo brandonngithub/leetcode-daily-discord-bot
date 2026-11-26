@@ -59,9 +59,7 @@ class UserActivityTests(unittest.TestCase):
             {"username": "brandonpy"},
         )
 
-    def test_activity_embeds_report_monthly_days_streaks_and_inactive_users(
-        self,
-    ):
+    def test_activity_report_creates_leaderboard_and_streaks(self):
         report_date = date(2026, 11, 25)
         user_activity = [
             (
@@ -81,7 +79,7 @@ class UserActivityTests(unittest.TestCase):
                 {
                     "dates": {date(2026, 11, 20), report_date},
                     "avatar_url": "https://example.com/harshypoo.png",
-                    "total_solved": 75,
+                    "total_solved": 360,
                 },
             ),
             (
@@ -89,7 +87,7 @@ class UserActivityTests(unittest.TestCase):
                 {
                     "dates": {date(2026, 11, 24)},
                     "avatar_url": "https://example.com/youngneezy.png",
-                    "total_solved": 24,
+                    "total_solved": 47,
                 },
             ),
             (
@@ -97,15 +95,17 @@ class UserActivityTests(unittest.TestCase):
                 {
                     "dates": set(),
                     "avatar_url": "https://example.com/amarz45.png",
-                    "total_solved": 3,
+                    "total_solved": 18,
                 },
             ),
             (
                 "asnorkin",
                 {
-                    "dates": set(),
+                    "dates": {
+                        date(2026, 11, day) for day in range(1, 26)
+                    },
                     "avatar_url": "https://example.com/asnorkin.png",
-                    "total_solved": 1,
+                    "total_solved": 2386,
                 },
             ),
             (
@@ -118,15 +118,25 @@ class UserActivityTests(unittest.TestCase):
             ),
         ]
 
-        (leaderboard, no_submissions), daily_streaks = (
+        leaderboard, daily_streaks = (
             tracker.create_activity_report(user_activity, report_date)
         )
 
-        self.assertIn("brandonpy", leaderboard["description"])
-        self.assertIn("3 days active", leaderboard["description"])
-        self.assertIn("110 problems completed", leaderboard["description"])
-        self.assertIn("sixthuser", leaderboard["description"])
-        self.assertEqual(leaderboard["description"].count("\n"), 5)
+        self.assertEqual(
+            leaderboard["title"],
+            "🏆 Total Problems Completed",
+        )
+        self.assertEqual(
+            leaderboard["description"].splitlines(),
+            [
+                "1. **asnorkin** — 2386",
+                "2. **brandonpy** — 110",
+                "3. **harshypoo** — 360",
+                "4. **youngneezy** — 47",
+                "5. **amarz45** — 18",
+                "6. **sixthuser** — 0",
+            ],
+        )
         self.assertEqual(
             daily_streaks,
             [
@@ -140,11 +150,32 @@ class UserActivityTests(unittest.TestCase):
                     1,
                     "https://example.com/harshypoo.png",
                 ),
+                (
+                    "asnorkin",
+                    25,
+                    "https://example.com/asnorkin.png",
+                ),
             ],
         )
-        self.assertIn("youngneezy", no_submissions["description"])
-        self.assertIn("amarz45", no_submissions["description"])
-        self.assertNotIn("brandonpy", no_submissions["description"])
+    def test_daily_challenge_embed_shows_dated_heading_and_link(self):
+        embed = tracker.create_embed(
+            {
+                "date": "2026-11-26",
+                "id": "3360",
+                "title": "Stone Removal Game",
+                "slug": "stone-removal-game",
+                "difficulty": "Easy",
+            }
+        )
+
+        self.assertEqual(embed["title"], "Daily Leetcode - November 26th")
+        self.assertEqual(
+            embed["description"],
+            "[3360. Stone Removal Game]"
+            "(https://leetcode.com/problems/stone-removal-game/)\n"
+            "Difficulty: **Easy**",
+        )
+        self.assertNotIn("footer", embed)
 
     @patch("tracker.load_avatar", return_value=Image.new("RGB", (92, 92)))
     def test_dashboard_renders_streak_cards(self, _load_avatar):

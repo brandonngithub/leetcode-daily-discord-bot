@@ -177,12 +177,15 @@ def get_user_activity(username):
 
 def create_embed(problem):
     difficulty = problem["difficulty"]
+    challenge_date = datetime.strptime(problem["date"], "%Y-%m-%d").date()
     return {
-        "title": f"{problem['id']}. {problem['title']}",
-        "url": f"https://leetcode.com/problems/{problem['slug']}/",
-        "description": f"Difficulty: **{difficulty}**",
+        "title": f"Daily Leetcode - {format_report_date(challenge_date)}",
+        "description": (
+            f"[{problem['id']}. {problem['title']}]"
+            f"(https://leetcode.com/problems/{problem['slug']}/)\n"
+            f"Difficulty: **{difficulty}**"
+        ),
         "color": DIFFICULTY_COLORS.get(difficulty, 0x5865F2),
-        "footer": {"text": f"LeetCode Daily Challenge | {problem['date']}"},
     }
 
 
@@ -195,47 +198,38 @@ def format_report_date(report_date):
     return f"{report_date.strftime('%B')} {day}{suffix}"
 
 
-def format_active_days(active_days):
-    if active_days == 1:
-        return "1 day active"
-    return f"{active_days} days active"
-
-
 def create_activity_report(user_activity, report_date):
-    month_start = report_date.replace(day=1)
-    monthly_active_days = [
-        (
-            username,
-            sum(
-                month_start <= active_date <= report_date
-                for active_date in activity["dates"]
-            ),
-            activity["total_solved"],
-        )
-        for username, activity in user_activity
-    ]
     leaderboard = sorted(
-        monthly_active_days, key=lambda entry: entry[1], reverse=True
+        [
+            (
+                username,
+                sum(
+                    report_date.replace(day=1) <= active_date <= report_date
+                    for active_date in activity["dates"]
+                ),
+                activity["total_solved"],
+            )
+            for username, activity in user_activity
+        ],
+        key=lambda entry: entry[1],
+        reverse=True,
     )
     leaderboard_text = "\n".join(
-        f"{position}. **{username}** — {format_active_days(active_days)}"
-        f" | {total_solved} problems completed"
-        for position, (username, active_days, total_solved) in enumerate(
+        f"{position}. **{username}** — {total_solved}"
+        for position, (username, _, total_solved) in enumerate(
             leaderboard, start=1
         )
     )
     leaderboard_embed = {
-        "title": f"🏆 Monthly Leaderboard — {month_start.strftime('%B %Y')}",
-        "description": leaderboard_text or "No submissions yet this month.",
+        "title": "🏆 Total Problems Completed",
+        "description": leaderboard_text or "No completed problems yet.",
         "color": 0xFEE75C,
     }
 
-    inactive = []
     daily_streaks = []
     for username, activity in user_activity:
         active_dates = activity["dates"]
         if report_date not in active_dates:
-            inactive.append(username)
             continue
 
         streak = 0
@@ -247,14 +241,7 @@ def create_activity_report(user_activity, report_date):
             (username, streak, activity["avatar_url"])
         )
 
-    no_submissions_embed = {
-        "title": f"❌ No Contributions — {format_report_date(report_date)}",
-        "color": 0x5865F2,
-        "description": (
-            "\n".join(inactive) if inactive else "Everyone had contributions!"
-        ),
-    }
-    return [leaderboard_embed, no_submissions_embed], daily_streaks
+    return leaderboard_embed, daily_streaks
 
 
 def load_avatar(avatar_url, username):
@@ -411,10 +398,10 @@ def main():
         print(f"Checking {username}...")
         user_activity.append((username, get_user_activity(username)))
 
-    activity_embeds, daily_streaks = create_activity_report(
+    leaderboard_embed, daily_streaks = create_activity_report(
         user_activity, report_date
     )
-    embeds = [create_embed(problem), *activity_embeds]
+    embeds = [create_embed(problem), leaderboard_embed]
 
     with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
         create_activity_dashboard(daily_streaks, image_file.name)
