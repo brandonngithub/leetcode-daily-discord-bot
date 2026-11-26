@@ -14,6 +14,8 @@ LEETCODE_USERS = [
     "youngneezy",
     "amarz45",
     "asnorkin",
+    "withaarzoo",
+    "BijoySingh7",
 ]
 DAILY_CHALLENGE_QUERY = """
 query questionOfToday {
