@@ -1,9 +1,12 @@
 import json
+import tempfile
 import unittest
 from datetime import date, datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 import tracker
+from PIL import Image
 
 
 class UserActivityTests(unittest.TestCase):
@@ -13,6 +16,7 @@ class UserActivityTests(unittest.TestCase):
         response.json.return_value = {
             "data": {
                 "matchedUser": {
+                    "profile": {"userAvatar": "https://example.com/avatar.png"},
                     "userCalendar": {
                         "submissionCalendar": json.dumps(
                             {
@@ -39,7 +43,10 @@ class UserActivityTests(unittest.TestCase):
 
         self.assertEqual(
             tracker.get_user_activity("brandonpy"),
-            {date(2026, 11, 24)},
+            {
+                "dates": {date(2026, 11, 24)},
+                "avatar_url": "https://example.com/avatar.png",
+            },
         )
         self.assertEqual(
             post.call_args.kwargs["json"]["variables"],
@@ -54,27 +61,82 @@ class UserActivityTests(unittest.TestCase):
             (
                 "brandonpy",
                 {
-                    date(2026, 11, 23),
-                    date(2026, 11, 24),
-                    date(2026, 11, 25),
+                    "dates": {
+                        date(2026, 11, 23),
+                        date(2026, 11, 24),
+                        date(2026, 11, 25),
+                    },
+                    "avatar_url": "https://example.com/brandonpy.png",
                 },
             ),
-            ("harshypoo", {date(2026, 11, 20), report_date}),
-            ("youngneezy", {date(2026, 11, 24)}),
-            ("amarz45", set()),
+            (
+                "harshypoo",
+                {
+                    "dates": {date(2026, 11, 20), report_date},
+                    "avatar_url": "https://example.com/harshypoo.png",
+                },
+            ),
+            (
+                "youngneezy",
+                {
+                    "dates": {date(2026, 11, 24)},
+                    "avatar_url": "https://example.com/youngneezy.png",
+                },
+            ),
+            (
+                "amarz45",
+                {
+                    "dates": set(),
+                    "avatar_url": "https://example.com/amarz45.png",
+                },
+            ),
         ]
 
-        leaderboard, streaks, no_submissions = (
-            tracker.create_activity_embeds(user_activity, report_date)
+        (leaderboard, no_submissions), daily_streaks = (
+            tracker.create_activity_report(user_activity, report_date)
         )
 
         self.assertIn("brandonpy", leaderboard["description"])
-        self.assertIn("3 active days", leaderboard["description"])
-        self.assertIn("3-day streak", streaks["description"])
-        self.assertIn("1-day streak", streaks["description"])
+        self.assertIn("3 days active", leaderboard["description"])
+        self.assertEqual(
+            daily_streaks,
+            [
+                (
+                    "brandonpy",
+                    3,
+                    "https://example.com/brandonpy.png",
+                ),
+                (
+                    "harshypoo",
+                    1,
+                    "https://example.com/harshypoo.png",
+                ),
+            ],
+        )
         self.assertIn("youngneezy", no_submissions["description"])
         self.assertIn("amarz45", no_submissions["description"])
         self.assertNotIn("brandonpy", no_submissions["description"])
+
+    @patch("tracker.load_avatar", return_value=Image.new("RGB", (92, 92)))
+    def test_dashboard_renders_streak_cards(self, _load_avatar):
+        activity = [
+            ("brandonpy", 3, "https://example.com/avatar.png"),
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "activity.png"
+            tracker.create_activity_dashboard(activity, output_path)
+
+            with Image.open(output_path) as dashboard:
+                self.assertEqual(dashboard.size, (228, 278))
+
+    def test_dashboard_renders_no_submissions_message(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "activity.png"
+            tracker.create_activity_dashboard([], output_path)
+
+            with Image.open(output_path) as dashboard:
+                self.assertEqual(dashboard.size, (600, 180))
 
 
 if __name__ == "__main__":
