@@ -13,9 +13,6 @@ LEETCODE_USERS = [
     "harshypoo",
     "youngneezy",
     "amarz45",
-    "asnorkin",
-    "withaarzoo",
-    "cute_potato",
 ]
 DAILY_CHALLENGE_QUERY = """
 query questionOfToday {
